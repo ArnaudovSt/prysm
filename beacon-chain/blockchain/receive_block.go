@@ -141,6 +141,12 @@ func (s *Service) ReceiveBlock(ctx context.Context, block interfaces.ReadOnlySig
 		return err
 	}
 	s.reportPostBlockProcessing(blockCopy, blockRoot, receivedTime, daWaitedTime)
+
+	if slots.IsEpochEnd(blockCopy.Block().Slot()) {
+		s.cfg.AttMonitor.Report()
+		s.cfg.AttMonitor.Reset()
+	}
+
 	return nil
 }
 
@@ -333,6 +339,11 @@ func (s *Service) ReceiveBlockBatch(ctx context.Context, blocks []blocks.ROBlock
 		cp := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
 		finalized := &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 		reportSlotMetrics(blockCopy.Block().Slot(), s.HeadSlot(), s.CurrentSlot(), finalized)
+
+		if slots.IsEpochEnd(blockCopy.Block().Slot()) {
+			s.cfg.AttMonitor.Report()
+			s.cfg.AttMonitor.Reset()
+		}
 	}
 
 	if err := s.cfg.BeaconDB.SaveBlocks(ctx, s.getInitSyncBlocks()); err != nil {
