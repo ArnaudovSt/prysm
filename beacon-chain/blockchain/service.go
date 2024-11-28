@@ -94,6 +94,7 @@ type config struct {
 	FinalizedStateAtStartUp state.BeaconState
 	ExecutionEngineCaller   execution.EngineCaller
 	SyncChecker             Checker
+	AttMonitor              attestations.Monitor
 }
 
 // Checker is an interface used to determine if a node is in initial sync

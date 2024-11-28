@@ -205,3 +205,11 @@ func WithSyncChecker(checker Checker) Option {
 		return nil
 	}
 }
+
+// WithAttestationMonitor sets the attestation monitor for the blockchain service.
+func WithAttestationMonitor(m attestations.Monitor) Option {
+	return func(s *Service) error {
+		s.cfg.AttMonitor = m
+		return nil
+	}
+}

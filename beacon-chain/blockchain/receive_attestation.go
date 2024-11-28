@@ -225,8 +225,10 @@ func (s *Service) receiveAttestationNoPubsub(ctx context.Context, att ethpb.Att,
 	defer span.End()
 
 	if err := s.OnAttestation(ctx, att, disparity); err != nil {
+		s.cfg.AttMonitor.IncrementFailure(err.Error())
 		return errors.Wrap(err, "could not process attestation")
 	}
+	s.cfg.AttMonitor.IncrementSuccess()
 
 	return nil
 }

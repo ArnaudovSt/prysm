@@ -71,16 +71,17 @@ func (mb *mockBroadcaster) BroadcastBLSChanges(_ context.Context, _ []*ethpb.Sig
 var _ p2p.Broadcaster = (*mockBroadcaster)(nil)
 
 type testServiceRequirements struct {
-	ctx     context.Context
-	db      db.Database
-	fcs     forkchoice.ForkChoicer
-	sg      *stategen.State
-	notif   statefeed.Notifier
-	cs      *startup.ClockSynchronizer
-	attPool attestations.Pool
-	attSrv  *attestations.Service
-	blsPool *blstoexec.Pool
-	dc      *depositsnapshot.Cache
+	ctx        context.Context
+	db         db.Database
+	fcs        forkchoice.ForkChoicer
+	sg         *stategen.State
+	notif      statefeed.Notifier
+	cs         *startup.ClockSynchronizer
+	attPool    attestations.Pool
+	attSrv     *attestations.Service
+	attMonitor attestations.Monitor
+	blsPool    *blstoexec.Pool
+	dc         *depositsnapshot.Cache
 }
 
 func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceRequirements) {
@@ -93,21 +94,23 @@ func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceReq
 	cs := startup.NewClockSynchronizer()
 	attPool := attestations.NewPool()
 	attSrv, err := attestations.NewService(ctx, &attestations.Config{Pool: attPool})
+	attMonitor := attestations.NewMonitor()
 	require.NoError(t, err)
 	blsPool := blstoexec.NewPool()
 	dc, err := depositsnapshot.New()
 	require.NoError(t, err)
 	req := &testServiceRequirements{
-		ctx:     ctx,
-		db:      beaconDB,
-		fcs:     fcs,
-		sg:      sg,
-		notif:   notif,
-		cs:      cs,
-		attPool: attPool,
-		attSrv:  attSrv,
-		blsPool: blsPool,
-		dc:      dc,
+		ctx:        ctx,
+		db:         beaconDB,
+		fcs:        fcs,
+		sg:         sg,
+		notif:      notif,
+		cs:         cs,
+		attPool:    attPool,
+		attSrv:     attSrv,
+		attMonitor: attMonitor,
+		blsPool:    blsPool,
+		dc:         dc,
 	}
 	defOpts := []Option{WithDatabase(req.db),
 		WithStateNotifier(req.notif),
@@ -116,6 +119,7 @@ func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceReq
 		WithClockSynchronizer(req.cs),
 		WithAttestationPool(req.attPool),
 		WithAttestationService(req.attSrv),
+		WithAttestationMonitor(req.attMonitor),
 		WithBLSToExecPool(req.blsPool),
 		WithDepositCache(dc),
 		WithTrackedValidatorsCache(cache.NewTrackedValidatorsCache()),
